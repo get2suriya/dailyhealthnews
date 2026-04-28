@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DailyHealth — Top US Healthcare News</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #1e3a5f;
+    --blue: #2d6a9f;
+    --blue-light: #4a8bbf;
+    --bg: #f4f7fb;
+    --surface: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --border: #d1dbe8;
+  }
+  html { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
+  body { min-height: 100vh; }
+
+  .breaking-bar { background: var(--navy); color: white; display: flex; align-items: center; overflow: hidden; height: 36px; position: sticky; top: 0; z-index: 100; }
+  .breaking-label { background: #c0392b; color: white; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; padding: 0 14px; height: 100%; display: flex; align-items: center; white-space: nowrap; flex-shrink: 0; }
+  .ticker-wrapper { overflow: hidden; flex: 1; }
+  .ticker-track { display: flex; animation: ticker 38s linear infinite; white-space: nowrap; }
+  .ticker-track:hover { animation-play-state: paused; }
+  .ticker-item { font-size: 12.5px; color: #ccd9e8; padding: 0 40px; display: flex; align-items: center; gap: 12px; }
+  .ticker-sep { color: #2d6a9f; }
+  @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+  header { background: var(--surface); border-bottom: 2px solid var(--navy); position: sticky; top: 36px; z-index: 90; box-shadow: 0 2px 12px rgba(30,58,95,0.08); }
+  .header-inner { max-width: 1280px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+  .logo-icon { width: 36px; height: 36px; background: var(--navy); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .logo-text { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--navy); letter-spacing: -0.02em; }
+  .logo-text span { color: var(--blue); }
+  .header-meta { font-size: 12px; color: var(--muted); text-align: center; }
+  .header-meta strong { color: var(--navy); display: block; }
+  .header-nav { display: flex; gap: 4px; }
+  .nav-btn { border: none; background: none; font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 500; padding: 8px 16px; border-radius: 6px; cursor: pointer; color: var(--muted); transition: all 0.18s; }
+  .nav-btn:hover { background: var(--bg); color: var(--navy); }
+  .nav-btn.active { background: var(--navy); color: white; }
+
+  .main { max-width: 1280px; margin: 0 auto; padding: 28px 24px 60px; }
+
+  .badge { display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 9px; border-radius: 3px; color: white; }
+
+  .featured-card { background: var(--surface); border-radius: 10px; overflow: hidden; display: grid; grid-template-columns: 1fr 420px; min-height: 360px; box-shadow: 0 4px 24px rgba(30,58,95,0.10); margin-bottom: 28px; border: 1px solid var(--border); cursor: pointer; transition: box-shadow 0.2s; }
+  .featured-card:hover { box-shadow: 0 8px 36px rgba(30,58,95,0.16); }
+  .featured-content { padding: 40px 40px 36px; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid var(--border); }
+  .featured-label { font-size: 11px; font-weight: 700; color: #c0392b; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px; }
+  .featured-title { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; line-height: 1.22; color: var(--text); margin-bottom: 18px; text-wrap: pretty; }
+  .featured-excerpt { font-size: 15px; line-height: 1.65; color: var(--muted); margin-bottom: 24px; text-wrap: pretty; }
+  .featured-footer { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .source-name { font-size: 12.5px; font-weight: 600; color: var(--navy); }
+  .pub-time { font-size: 12px; color: var(--muted); }
+
+  .articles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .article-card { background: var(--surface); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: all 0.18s; display: flex; flex-direction: column; box-shadow: 0 2px 8px rgba(30,58,95,0.05); }
+  .article-card:hover { box-shadow: 0 6px 24px rgba(30,58,95,0.12); transform: translateY(-2px); }
+  .card-top-bar { height: 3px; }
+  .card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+  .card-rank { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .card-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 600; line-height: 1.32; color: var(--text); margin-bottom: 10px; text-wrap: pretty; flex: 1; }
+  .card-excerpt { font-size: 13px; line-height: 1.58; color: var(--muted); margin-bottom: 14px; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; }
+  .card-source { font-size: 11.5px; font-weight: 600; color: var(--navy); }
+  .card-time { font-size: 11px; color: var(--muted); }
+  .read-more { font-size: 12px; font-weight: 600; color: var(--blue); text-decoration: none; display: flex; align-items: center; gap: 4px; margin-top: 12px; }
+
+  .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 16px; }
+  .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--navy); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 14px; color: var(--muted); }
+  .loading-sub { font-size: 12px; color: #9ca3af; }
+
+  .search-header { margin-bottom: 28px; }
+  .search-title { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+  .search-sub { font-size: 14px; color: var(--muted); }
+  .search-bar-row { display: flex; gap: 12px; margin-bottom: 20px; }
+  .search-input { flex: 1; padding: 12px 18px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14.5px; color: var(--text); background: var(--surface); outline: none; transition: border-color 0.18s; }
+  .search-input:focus { border-color: var(--blue); }
+  .search-btn { padding: 12px 24px; background: var(--navy); color: white; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .filters-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; align-items: flex-end; }
+  .filter-group { display: flex; flex-direction: column; gap: 5px; }
+  .filter-label { font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .filter-select { padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 7px; font-family: 'DM Sans', sans-serif; font-size: 13.5px; color: var(--text); background: var(--surface); outline: none; min-width: 160px; cursor: pointer; }
+  .clear-btn { padding: 9px 16px; background: none; border: 1.5px solid var(--border); border-radius: 7px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--muted); cursor: pointer; }
+  .results-count { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+  .results-count strong { color: var(--navy); }
+  .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin-bottom: 12px; display: flex; gap: 18px; align-items: flex-start; cursor: pointer; transition: all 0.18s; }
+  .result-card:hover { box-shadow: 0 4px 16px rgba(30,58,95,0.10); transform: translateX(3px); }
+  .result-rank { font-size: 24px; font-weight: 700; color: var(--border); flex-shrink: 0; width: 32px; text-align: center; font-family: 'Playfair Display', serif; }
+  .result-body { flex: 1; }
+  .result-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 7px; line-height: 1.3; }
+  .result-excerpt { font-size: 13.5px; color: var(--muted); margin-bottom: 10px; line-height: 1.55; }
+  .result-meta { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(10,20,40,0.65); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(3px); animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal { background: var(--surface); border-radius: 12px; max-width: 700px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,0.3); animation: slideUp 0.25s ease; }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-header { padding: 28px 32px 0; position: relative; }
+  .modal-badge-row { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .modal-title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; line-height: 1.28; color: var(--text); margin-bottom: 14px; }
+  .modal-meta { display: flex; gap: 16px; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .modal-body { padding: 24px 32px 32px; }
+  .modal-excerpt { font-size: 16px; line-height: 1.7; color: var(--muted); margin-bottom: 20px; }
+  .modal-content { font-size: 14.5px; line-height: 1.75; color: var(--text); }
+  .modal-close { position: absolute; top: 16px; right: 20px; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted); }
+  .ext-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--blue); text-decoration: none; margin-top: 16px; }
+
+  footer { background: var(--navy); color: #ccd9e8; text-align: center; padding: 24px; font-size: 12.5px; }
+  footer a { color: #4a8bbf; text-decoration: none; }
+
+  .error-bar { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px 20px; margin-bottom: 20px; color: #dc2626; font-size: 14px; }
+
+  @media (max-width: 900px) {
+    .featured-card { grid-template-columns: 1fr; min-height: auto; }
+    .featured-image-block { min-height: 180px; }
+    .articles-grid { grid-template-columns: repeat(2, 1fr); }
+    .header-meta { display: none; }
+  }
+  @media (max-width: 600px) {
+    .articles-grid { grid-template-columns: 1fr; }
+    .featured-title { font-size: 24px; }
+    .featured-content { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+const CATEGORIES = {
+  government: { label: 'Government', color: '#1e3a5f' },
+  insurer:    { label: 'Insurance',  color: '#2d6a9f' },
+  provider:   { label: 'Provider',   color: '#0f766e' },
+  pharmacy:   { label: 'Pharmacy',   color: '#6d28d9' },
+  digital:    { label: 'Digital',    color: '#0284c7' },
+  ai:         { label: 'AI & Tech',  color: '#1d4ed8' },
+  launch:     { label: 'Launch',     color: '#b45309' },
+  other:      { label: 'Industry',   color: '#64748b' },
+};
+
+const TICKER_ITEMS = [
+  "Senate Finance Committee schedules hearing on Medicare drug pricing reform",
+  "FDA approves first AI-powered diagnostic tool for early-stage pancreatic cancer detection",
+  "UnitedHealth Group reports Q1 earnings amid ongoing DOJ antitrust scrutiny",
+  "CMS announces expanded telehealth reimbursement through 2027",
+  "CVS Health acquires specialty pharmacy network in $4.2B deal",
+];
+
+const ARTICLE_SPECS = [
+  [1,  'government', 'Politico Health'],
+  [2,  'ai',         'STAT News'],
+  [3,  'insurer',    'Bloomberg Health'],
+  [4,  'provider',   'Modern Healthcare'],
+  [5,  'pharmacy',   'Reuters Health'],
+  [6,  'digital',    'Fierce Healthcare'],
+  [7,  'launch',     "Becker's Hospital Review"],
+  [8,  'government', 'Reuters Health'],
+  [9,  'provider',   'STAT News'],
+  [10, 'other',      'Modern Healthcare'],
+];
+
+function todayLabel() {
+  return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+}
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+function formatTime(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+function formatDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function catColor(cat) { return (CATEGORIES[cat] || CATEGORIES.other).color; }
+function catLabel(cat) { return (CATEGORIES[cat] || CATEGORIES.other).label; }
+
+function makePrompt(rank, category, source) {
+  const today = todayISO();
+  return `Write 1 US healthcare news headline for ${today} about the ${category} sector. Return ONLY this JSON object, no other text:
+{"id":"art-${rank}","rank":${rank},"title":"headline under 75 chars","excerpt":"summary under 110 chars","source":"${source}","category":"${category}","publishedAt":"${today}T13:00:00Z","tags":["health"],"content":"one sentence context under 80 chars"}`;
+}
+
+// Calls the Vercel serverless function at /api/news
+async function fetchBatch(rank, category, source) {
+  const prompt = makePrompt(rank, category, source);
+  const res = await fetch('/api/news', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  });
+  if (!res.ok) throw new Error('API error ' + res.status);
+  const { text, error } = await res.json();
+  if (error) throw new Error(error);
+  const match = text.match(/\{[\s\S]*?\}/);
+  if (!match) throw new Error('No JSON for rank ' + rank);
+  return JSON.parse(match[0]);
+}
+
+async function fetchAllArticles() {
+  const results = await Promise.all(
+    ARTICLE_SPECS.map(([rank, cat, src]) => fetchBatch(rank, cat, src))
+  );
+  return results.sort((a, b) => a.rank - b.rank);
+}
+
+// ── Components ───────────────────────────────────────────────────
+function Badge({ cat }) {
+  return <span className="badge" style={{ background: catColor(cat) }}>{catLabel(cat)}</span>;
+}
+
+function ImageBlock({ cat, style }) {
+  const icons = { government:'🏛', insurer:'🛡', provider:'🏥', pharmacy:'💊', digital:'📱', ai:'🤖', launch:'🚀', other:'📰' };
+  const c = catColor(cat);
+  return (
+    <div style={{ background: `linear-gradient(135deg, ${c}cc 0%, ${c}77 100%)`, display:'flex', alignItems:'center', justifyContent:'center', ...style }}>
+      <span style={{ fontSize: 52, opacity: 0.5 }}>{icons[cat] || '📰'}</span>
+    </div>
+  );
+}
+
+function BreakingTicker() {
+  const doubled = [...TICKER_ITEMS, ...TICKER_ITEMS];
+  return (
+    <div className="breaking-bar">
+      <div className="breaking-label">BREAKING</div>
+      <div className="ticker-wrapper">
+        <div className="ticker-track">
+          {doubled.map((item, i) => (
+            <span key={i} className="ticker-item"><span className="ticker-sep">◆</span>{item}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ArticleModal({ article, onClose }) {
+  if (!article) return null;
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <button className="modal-close" onClick={onClose}>×</button>
+          <div className="modal-badge-row">
+            <Badge cat={article.category} />
+            {(article.tags || []).slice(0,2).map(t => (
+              <span key={t} style={{ fontSize:11, color:'#6b7280', background:'#f1f5f9', padding:'2px 8px', borderRadius:12 }}>{t}</span>
+            ))}
+          </div>
+          <div className="modal-title">{article.title}</div>
+          <div className="modal-meta">
+            <span className="source-name">{article.source}</span>
+            <span className="pub-time">{formatDate(article.publishedAt)} · {formatTime(article.publishedAt)}</span>
+          </div>
+        </div>
+        <div className="modal-body">
+          <p className="modal-excerpt">{article.excerpt}</p>
+          <div className="modal-content">{article.content || <em style={{color:'#9ca3af'}}>Full article available at source.</em>}</div>
+          <a className="ext-link" href="#" onClick={e => e.preventDefault()}>Read full article at {article.source} →</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FeaturedCard({ article, onClick }) {
+  return (
+    <div className="featured-card" onClick={() => onClick(article)}>
+      <div className="featured-content">
+        <div>
+          <div className="featured-label">Top Story</div>
+          <div className="featured-title">{article.title}</div>
+          <div className="featured-excerpt">{article.excerpt}</div>
+        </div>
+        <div className="featured-footer">
+          <Badge cat={article.category} />
+          <span className="source-name">{article.source}</span>
+          <span className="pub-time">{formatTime(article.publishedAt)}</span>
+        </div>
+      </div>
+      <ImageBlock cat={article.category} style={{ minHeight: 320 }} />
+    </div>
+  );
+}
+
+function ArticleCard({ article, rank, onClick }) {
+  return (
+    <div className="article-card" onClick={() => onClick(article)}>
+      <div className="card-top-bar" style={{ background: catColor(article.category) }} />
+      <div className="card-body">
+        <div className="card-rank">
+          <span style={{ fontWeight:700, color:'#9ca3af' }}>#{rank}</span>
+          <Badge cat={article.category} />
+        </div>
+        <div className="card-title">{article.title}</div>
+        <div className="card-excerpt">{article.excerpt}</div>
+        <div className="card-footer">
+          <span className="card-source">{article.source}</span>
+          <span className="card-time">{formatTime(article.publishedAt)}</span>
+        </div>
+        <span className="read-more">Read more →</span>
+      </div>
+    </div>
+  );
+}
+
+function TodayFeed({ articles, loading, onArticleClick }) {
+  if (loading) return (
+    <div className="loading-state">
+      <div className="spinner" />
+      <div className="loading-text">Fetching today's top health stories…</div>
+      <div className="loading-sub">This takes about 10–15 seconds on first load</div>
+    </div>
+  );
+  if (!articles.length) return null;
+  const [featured, ...rest] = articles;
+  return (
+    <div>
+      <FeaturedCard article={featured} onClick={onArticleClick} />
+      <div className="articles-grid">
+        {rest.map((a, i) => <ArticleCard key={a.id} article={a} rank={i+2} onClick={onArticleClick} />)}
+      </div>
+    </div>
+  );
+}
+
+function SearchView({ articles, onArticleClick }) {
+  const [query, setQuery] = useState('');
+  const [catFilter, setCatFilter] = useState('');
+  const [sourceFilter, setSourceFilter] = useState('');
+  const [applied, setApplied] = useState({ query:'', cat:'', source:'' });
+  const sources = [...new Set(articles.map(a => a.source))].sort();
+  function applyFilters() { setApplied({ query, cat: catFilter, source: sourceFilter }); }
+  function clearFilters() { setQuery(''); setCatFilter(''); setSourceFilter(''); setApplied({ query:'', cat:'', source:'' }); }
+  const results = articles.filter(a => {
+    const q = applied.query.toLowerCase();
+    return (!q || a.title.toLowerCase().includes(q) || a.excerpt.toLowerCase().includes(q))
+      && (!applied.cat || a.category === applied.cat)
+      && (!applied.source || a.source === applied.source);
+  });
+  return (
+    <div>
+      <div className="search-header">
+        <div className="search-title">Search Archive</div>
+        <div className="search-sub">Today's healthcare news — search by keyword, category, or source</div>
+      </div>
+      <div className="search-bar-row">
+        <input className="search-input" placeholder="Search articles…" value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key==='Enter' && applyFilters()} />
+        <button className="search-btn" onClick={applyFilters}>Search</button>
+      </div>
+      <div className="filters-row">
+        <div className="filter-group">
+          <label className="filter-label">Category</label>
+          <select className="filter-select" value={catFilter} onChange={e => setCatFilter(e.target.value)}>
+            <option value="">All Categories</option>
+            {Object.entries(CATEGORIES).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
+          </select>
+        </div>
+        <div className="filter-group">
+          <label className="filter-label">Source</label>
+          <select className="filter-select" value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}>
+            <option value="">All Sources</option>
+            {sources.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <button className="clear-btn" onClick={clearFilters}>Clear</button>
+      </div>
+      <div className="results-count"><strong>{results.length} article{results.length!==1?'s':''}</strong> found</div>
+      <div>
+        {results.map((a,i) => (
+          <div className="result-card" key={a.id} onClick={() => onArticleClick(a)}>
+            <div className="result-rank">{i+1}</div>
+            <div className="result-body">
+              <div className="result-title">{a.title}</div>
+              <div className="result-excerpt">{a.excerpt}</div>
+              <div className="result-meta"><Badge cat={a.category} /><span className="source-name">{a.source}</span><span className="pub-time">{formatDate(a.publishedAt)}</span></div>
+            </div>
+          </div>
+        ))}
+        {!results.length && <div style={{textAlign:'center',padding:'60px 0',color:'#9ca3af'}}><div style={{fontSize:40,marginBottom:12}}>🔍</div><div>No articles match your search.</div></div>}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [view, setView] = useState('today');
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true); setError(null);
+      try {
+        const cacheKey = 'dh_' + todayISO();
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          setArticles(JSON.parse(cached));
+          setLastUpdated(sessionStorage.getItem('dh_updated'));
+          setLoading(false);
+          return;
+        }
+        const sorted = await fetchAllArticles();
+        sessionStorage.setItem(cacheKey, JSON.stringify(sorted));
+        const now = new Date().toISOString();
+        sessionStorage.setItem('dh_updated', now);
+        setArticles(sorted);
+        setLastUpdated(now);
+      } catch(e) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const refresh = useCallback(async () => {
+    sessionStorage.clear();
+    setLoading(true); setError(null);
+    try {
+      const sorted = await fetchAllArticles();
+      const cacheKey = 'dh_' + todayISO();
+      sessionStorage.setItem(cacheKey, JSON.stringify(sorted));
+      const now = new Date().toISOString();
+      sessionStorage.setItem('dh_updated', now);
+      setArticles(sorted);
+      setLastUpdated(now);
+    } catch(e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updatedStr = lastUpdated
+    ? 'Updated at ' + formatTime(lastUpdated)
+    : 'Loading…';
+
+  return (
+    <div>
+      <BreakingTicker />
+      <header>
+        <div className="header-inner">
+          <a className="logo" href="#">
+            <div className="logo-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10 2v16M2 10h16" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <span className="logo-text">Daily<span>Health</span></span>
+          </a>
+          <div className="header-meta">
+            <strong>{todayLabel()}</strong>
+            <span>{updatedStr}</span>
+          </div>
+          <nav className="header-nav">
+            <button className={`nav-btn ${view==='today'?'active':''}`} onClick={() => setView('today')}>Today's News</button>
+            <button className={`nav-btn ${view==='search'?'active':''}`} onClick={() => setView('search')}>Search</button>
+            <button className="nav-btn" onClick={refresh} title="Refresh stories">↻</button>
+          </nav>
+        </div>
+      </header>
+      <main className="main">
+        {error && <div className="error-bar">⚠ Failed to load: {error}</div>}
+        {view === 'today'
+          ? <TodayFeed articles={articles} loading={loading} onArticleClick={setSelected} />
+          : <SearchView articles={articles} onArticleClick={setSelected} />
+        }
+      </main>
+      <footer>
+        <div>© {new Date().getFullYear()} DailyHealth · Powered by Claude AI · For healthcare professionals</div>
+        <div style={{marginTop:6,fontSize:11,opacity:0.6}}>AI-generated news summaries. Always verify with primary sources.</div>
+      </footer>
+      {selected && <ArticleModal article={selected} onClose={() => setSelected(null)} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
