@@ -15,6 +15,20 @@ export default async function handler(req, res) {
     { query: 'AI artificial intelligence digital health',   category: 'ai',         count: 2 },
   ];
 
+  function decodeEntities(str) {
+    return str
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ');
+  }
+
+  function stripHtml(str) {
+    return str.replace(/<[^>]+>/g, '').trim();
+  }
+
   function parseRSS(xml, category, maxItems) {
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
@@ -23,32 +37,36 @@ export default async function handler(req, res) {
       const block = match[1];
       const get = (tag) => {
         const m = block.match(new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([^<]*)<\\/${tag}>`));
-        return m ? (m[1] || m[2] || '').trim() : '';
-      };
-      const getLinkAttr = () => {
-        const m = block.match(/<source url="([^"]+)"/);
-        return m ? m[1] : '';
+        return m ? decodeEntities((m[1] || m[2] || '').trim()) : '';
       };
       const rawTitle = get('title');
-      // Google News titles are "Headline - Source Name"
       const lastDash = rawTitle.lastIndexOf(' - ');
-      const title   = lastDash > 0 ? rawTitle.slice(0, lastDash).trim() : rawTitle;
-      const source  = lastDash > 0 ? rawTitle.slice(lastDash + 3).trim() : get('source');
-      const link    = get('link') || getLinkAttr();
-      const pubDate = get('pubDate');
-      const desc    = get('description').replace(/<[^>]+>/g, '').slice(0, 160);
+      const title  = lastDash > 0 ? rawTitle.slice(0, lastDash).trim() : rawTitle;
+      const source = lastDash > 0 ? rawTitle.slice(lastDash + 3).trim() : get('source');
+      const link   = (() => {
+        const m = block.match(/<link>([^<]+)<\/link>|<link\s*\/>([^<]+)/);
+        return m ? decodeEntities((m[1] || m[2] || '').trim()) : '';
+      })();
+
+      // Parse description — strip HTML, decode entities, drop if it looks like a URL
+      const rawDesc = get('description');
+      const cleanDesc = stripHtml(decodeEntities(rawDesc)).replace(/https?:\/\/\S+/g, '').trim();
+      const excerpt = cleanDesc.length > 30 ? cleanDesc.slice(0, 160) : '';
 
       if (title && link) {
         items.push({
           id: `art-${category}-${items.length}`,
           title,
-          excerpt: desc || title,
+          excerpt: excerpt || 'Read the full story at ' + source + '.',
           source: source || 'Healthcare News',
           category,
-          publishedAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
+          publishedAt: (() => {
+            const d = get('pubDate');
+            return d ? new Date(d).toISOString() : new Date().toISOString();
+          })(),
           sourceUrl: link,
           tags: [category],
-          content: desc,
+          content: excerpt || '',
         });
       }
     }
