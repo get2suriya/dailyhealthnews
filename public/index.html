@@ -194,14 +194,20 @@ function makePrompt(rank, category, source) {
 }
 
 // Calls the Vercel serverless function at /api/news
-async function fetchBatch(rank, category, source) {
+async function fetchBatch(rank, category, source, attempt = 0) {
   const prompt = makePrompt(rank, category, source);
   const res = await fetch('/api/news', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt }),
   });
-  if (!res.ok) throw new Error('API error ' + res.status);
+  if (!res.ok) {
+    if (attempt < 2) {
+      await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
+      return fetchBatch(rank, category, source, attempt + 1);
+    }
+    throw new Error('API error ' + res.status + ' for rank ' + rank);
+  }
   const { text, error } = await res.json();
   if (error) throw new Error(error);
   const match = text.match(/\{[\s\S]*?\}/);
