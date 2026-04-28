@@ -26,7 +26,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API key not configured' });
   }
 
-  try {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  async function callAnthropic() {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -40,16 +42,25 @@ export default async function handler(req, res) {
         messages: [{ role: 'user', content: prompt }],
       }),
     });
-
     if (!response.ok) {
       const err = await response.text();
-      return res.status(502).json({ error: 'Anthropic API error', detail: err });
+      throw new Error('Anthropic ' + response.status + ': ' + err.slice(0, 200));
     }
-
     const data = await response.json();
-    const text = data.content?.[0]?.text || '';
+    return data.content?.[0]?.text || '';
+  }
+
+  try {
+    let text;
+    try {
+      text = await callAnthropic();
+    } catch (e) {
+      // Retry once after a short delay
+      await sleep(800);
+      text = await callAnthropic();
+    }
     return res.status(200).json({ text });
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    return res.status(502).json({ error: e.message });
   }
 }
