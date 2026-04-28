@@ -157,18 +157,7 @@ const TICKER_ITEMS = [
   "CVS Health acquires specialty pharmacy network in $4.2B deal",
 ];
 
-const ARTICLE_SPECS = [
-  [1,  'government', 'Politico Health'],
-  [2,  'ai',         'STAT News'],
-  [3,  'insurer',    'Bloomberg Health'],
-  [4,  'provider',   'Modern Healthcare'],
-  [5,  'pharmacy',   'Reuters Health'],
-  [6,  'digital',    'Fierce Healthcare'],
-  [7,  'launch',     "Becker's Hospital Review"],
-  [8,  'government', 'Reuters Health'],
-  [9,  'provider',   'STAT News'],
-  [10, 'other',      'Modern Healthcare'],
-];
+
 
 function todayLabel() {
   return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
@@ -187,39 +176,14 @@ function formatDate(iso) {
 function catColor(cat) { return (CATEGORIES[cat] || CATEGORIES.other).color; }
 function catLabel(cat) { return (CATEGORIES[cat] || CATEGORIES.other).label; }
 
-function makePrompt(rank, category, source) {
-  const today = todayISO();
-  return `Write 1 US healthcare news headline for ${today} about the ${category} sector. Return ONLY this JSON object, no other text:
-{"id":"art-${rank}","rank":${rank},"title":"headline under 75 chars","excerpt":"summary under 110 chars","source":"${source}","category":"${category}","publishedAt":"${today}T13:00:00Z","tags":["health"],"content":"one sentence context under 80 chars"}`;
-}
-
-// Calls the Vercel serverless function at /api/news
-async function fetchBatch(rank, category, source, attempt = 0) {
-  const prompt = makePrompt(rank, category, source);
-  const res = await fetch('/api/news', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt }),
-  });
-  if (!res.ok) {
-    if (attempt < 2) {
-      await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
-      return fetchBatch(rank, category, source, attempt + 1);
-    }
-    throw new Error('API error ' + res.status + ' for rank ' + rank);
-  }
-  const { text, error } = await res.json();
-  if (error) throw new Error(error);
-  const match = text.match(/\{[\s\S]*?\}/);
-  if (!match) throw new Error('No JSON for rank ' + rank);
-  return JSON.parse(match[0]);
-}
-
+// Fetch all real articles from RSS in one GET call
 async function fetchAllArticles() {
-  const results = await Promise.all(
-    ARTICLE_SPECS.map(([rank, cat, src]) => fetchBatch(rank, cat, src))
-  );
-  return results.sort((a, b) => a.rank - b.rank);
+  const res = await fetch('/api/news', { method: 'GET' });
+  if (!res.ok) throw new Error('API error ' + res.status);
+  const { articles, error } = await res.json();
+  if (error) throw new Error(error);
+  if (!articles || !articles.length) throw new Error('No articles returned');
+  return articles;
 }
 
 // ── Components ───────────────────────────────────────────────────
@@ -275,7 +239,9 @@ function ArticleModal({ article, onClose }) {
         <div className="modal-body">
           <p className="modal-excerpt">{article.excerpt}</p>
           <div className="modal-content">{article.content || <em style={{color:'#9ca3af'}}>Full article available at source.</em>}</div>
-          <a className="ext-link" href="#" onClick={e => e.preventDefault()}>Read full article at {article.source} →</a>
+          <a className="ext-link" href={article.sourceUrl || `https://news.google.com/search?q=${encodeURIComponent(article.title)}`} target="_blank" rel="noopener noreferrer">
+            Read full article at {article.source} →
+          </a>
         </div>
       </div>
     </div>
